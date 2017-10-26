@@ -212,9 +212,9 @@ void clearSpaces(char *toClear) {
   size_t lineLen;
 
   firstChar = toClear;
-  while(*firstChar != '\0' && isspace(*firstChar)) {
+  /*while(*firstChar != '\0' && isspace(*firstChar)) {
     ++firstChar;
-  }
+  }*/
 
   lineLen = strlen(firstChar) + 1;
   memmove(toClear, firstChar, lineLen);
@@ -239,12 +239,12 @@ ICalErrorCode badError(Calendar *cal, FILE *file, Calendar **obj, ICalErrorCode 
 ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
   char *token;
   char *tempFile;
-  char strArg[256];
-  char data[256];
-  char foldedLine[256];
-  char line[256];
-  char temp[256];
-  char title[256];
+  char strArg[2048];
+  char data[2048];
+  char foldedLine[2048];
+  char line[2048];
+  char temp[2048];
+  char title[2048];
   char notFoldedChar = '0';
   int calEnded = 0;
   int inAlarm = 0;
@@ -288,7 +288,24 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     return badError(cal, file, obj, INV_FILE);
   }
 
+  if(notFoldedChar != '0') {
+    strcpy(temp, line);
+    strcpy(line, "");
+    
+    line[0] = notFoldedChar;
+    line[1] = '\0';
+    strcat(line, temp);
+    
+    notFoldedChar = '0';
+  }
+  
   clearSpaces(line);
+  while(isspace(notFoldedChar = fgetc(file))) {
+    fgets(foldedLine, sizeof(foldedLine), file);
+    clearSpaces(foldedLine);
+    strcat(line, foldedLine);
+  }
+  
   if(strcmp(line, "BEGIN:VCALENDAR") != 0) {
     return badError(cal, file, obj, INV_CAL);
   }
@@ -301,7 +318,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     } else if(calEnded || (line[strlen(line) - 2] != '\r' && line[strlen(line) - 2] != '\n')) {
       return badError(cal, file, obj, INV_CAL);
     }
-  
+
     if(notFoldedChar != '0') {
       strcpy(temp, line);
       strcpy(line, "");
@@ -323,6 +340,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
       clearSpaces(foldedLine);
       strcat(line, foldedLine);
     }
+	printf("LINE: %s\n", line);
 
     token = strtok(line, ":;");
     if(!token && inAlarm) {
@@ -902,16 +920,3 @@ ICalErrorCode validateCalendar(const Calendar* obj) {
   
   return OK;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
